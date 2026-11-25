@@ -1,0 +1,35 @@
+# Small, short-lived EKS cluster for practice.  COSTS MONEY (roughly $0.25/hour) - delete it when done:
+#   eksctl delete cluster -f tools/eks/cluster.yaml
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: bootcamp
+  region: eu-north-1        # Stockholm: the region the AWS project is locked to
+
+# withOIDC removed: the AWS project's service control policy denies IAM OIDC providers (no IRSA).
+# Pod Identity (eks-pod-identity-agent addon below) is used instead for pod permissions.
+
+accessConfig:
+  authenticationMode: API_AND_CONFIG_MAP   # access entries (new) + aws-auth ConfigMap (legacy)
+
+addons:
+  - name: vpc-cni
+  - name: coredns
+  - name: kube-proxy
+  - name: eks-pod-identity-agent
+
+vpc:
+  nat:
+    gateway: Single
+
+managedNodeGroups:
+  - name: ng-ondemand
+    instanceType: t3.medium
+    # spot removed: new accounts hit the EC2 Fleet request quota with spot
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 2
+    volumeSize: 20
+    iam:
+      withAddonPolicies:
+        cloudWatch: true
